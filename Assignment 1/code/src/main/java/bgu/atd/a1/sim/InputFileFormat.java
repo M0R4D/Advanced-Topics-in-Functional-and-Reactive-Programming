@@ -1,13 +1,22 @@
 package bgu.atd.a1.sim;
 
-import bgu.atd.a1.Action;
+import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
 public class InputFileFormat {
+    @SerializedName("threads")
     public int threads;
+
+    @SerializedName("Computers")
     public List<Computer> computers;
-    public List<Action> phase1;
-    public List<Action> phase2;
-    public List<Action> phase3;
+
+    @SerializedName("Phase 1")
+    public List<ActionTypesFormat> phase1;
+
+    @SerializedName("Phase 2")
+    public List<ActionTypesFormat> phase2;
+
+    @SerializedName("Phase 3")
+    public List<ActionTypesFormat> phase3;
 }

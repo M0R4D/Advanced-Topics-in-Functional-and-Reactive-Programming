@@ -1,8 +1,12 @@
 package bgu.atd.a1;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * represents an actor thread pool - to understand what this class does please
@@ -16,7 +20,13 @@ import java.util.concurrent.Executors;
  */
 public class ActorThreadPool {
 
+	private int nthreads;
 	private Map<String, PrivateState> actors;
+	private Map<String, Queue<Action>> actionsQueues;
+	private ExecutorService executorService;
+	private LinkedBlockingQueue<String> availableActors;
+	private Queue<String> unavailableActors;
+
 
 	/**
 	 * creates an {@link ActorThreadPool} which has nthreads. Note, threads
@@ -31,10 +41,12 @@ public class ActorThreadPool {
 	 *            pool
 	 */
 	public ActorThreadPool(int nthreads) {
-		// TODO: replace method body with real implementation
-		//  ExecutorService executor = Executors.newFixedThreadPool(nthreads);
-
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+		this.nthreads = nthreads;
+		this.actors = new HashMap<>();
+		this.actionsQueues = new HashMap<>();
+		this.executorService = Executors.newFixedThreadPool(nthreads);
+		this.availableActors = new LinkedBlockingQueue<>();
+		this.unavailableActors = new ConcurrentLinkedDeque<>();
 	}
 
 	/**
@@ -67,8 +79,19 @@ public class ActorThreadPool {
 	 *            actor's private state (actor's information)
 	 */
 	public void submit(Action<?> action, String actorId, PrivateState actorState) {
-		// TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+		synchronized (actorState) {
+			if (!this.actors.containsKey(actorId)) {
+				this.actors.put(actorId, actorState);
+				this.actionsQueues.put(actorId, new ConcurrentLinkedDeque<>());
+			}
+		}
+		this.actionsQueues.get(actorId).add(action);
+		synchronized (this.availableActors) {
+			if (!this.unavailableActors.contains(actorId) && !this.availableActors.contains(actorId)) {
+				this.availableActors.add(actorId);
+				this.availableActors.notifyAll();
+			}
+		}
 	}
 
 	/**
@@ -82,16 +105,48 @@ public class ActorThreadPool {
 	 *             if the thread that shut down the threads is interrupted
 	 */
 	public void shutdown() throws InterruptedException {
-		// TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+		this.executorService.shutdown();
 	}
 
 	/**
 	 * start the threads belongs to this thread pool
 	 */
 	public void start() {
-		// TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+		for(int i = 0; i < this.nthreads; i++) {
+			this.executorService.execute( () -> {
+				while (!this.executorService.isShutdown()) {
+					String actorName = null;
+					PrivateState actorState = null;
+					synchronized (this.availableActors) {
+						try {
+							while (availableActors.isEmpty()) {
+								this.availableActors.wait();
+							}
+							actorName = this.availableActors.take();
+
+							this.unavailableActors.add(actorName);
+							actorState = actors.get(actorName);
+						} catch (InterruptedException e) {
+							break;
+						}
+					}
+					if(!this.actionsQueues.get(actorName).isEmpty()) {
+						try {
+							this.actionsQueues.get(actorName).poll().handle(this, actorName, actorState);
+						} catch (IllegalAccessException e) {
+							break;
+						}
+					}
+					synchronized (this.availableActors) {
+						this.unavailableActors.remove(actorName);
+						if (!this.actionsQueues.get(actorName).isEmpty()) {
+							this.availableActors.add(actorName);
+							this.availableActors.notifyAll();
+						}
+					}
+				}
+			});
+		}
 	}
 
 }

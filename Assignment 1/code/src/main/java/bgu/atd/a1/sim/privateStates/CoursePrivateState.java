@@ -59,4 +59,8 @@ public class CoursePrivateState extends PrivateState{
 		this.registered--;
 		regStudents.remove(student);
 	}
+
+	public void closeCourse() {
+		this.availableSpots = -1;
+	}
 }

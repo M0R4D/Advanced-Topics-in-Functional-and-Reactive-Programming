@@ -4,6 +4,7 @@ import bgu.atd.a1.Action;
 import bgu.atd.a1.sim.privateStates.CoursePrivateState;
 import bgu.atd.a1.sim.privateStates.DepartmentPrivateState;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class OpenCourse extends Action {
@@ -34,7 +35,18 @@ public class OpenCourse extends Action {
             throw new IllegalAccessException("only DepartmentPrivateState actor could enter here");
         if( ((DepartmentPrivateState) this.actorState).getCourseList().contains(courseName))
             complete(false + this.courseName + " course already opened");
-        // TODO
-        return 1;
+
+        List<Action> initiateCourse = new LinkedList<>();
+        Action initiateCourseAction = new InitiateCourse(this.courseName, this.department, this.space, this.pre);
+        initiateCourse.add(initiateCourseAction);
+
+        then(initiateCourse, () -> {
+            if((boolean) initiateCourse.get(0).getResult().get()) {
+                complete(true + "Course \"" + this.courseName + "\" has been opened successfully");
+            }
+            else
+                complete(false + "Error occurred while opening course \"" + this.courseName + "\"");
+        });
+        sendMessage(initiateCourseAction, this.courseName, new CoursePrivateState());
     }
 }

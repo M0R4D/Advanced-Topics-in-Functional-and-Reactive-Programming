@@ -1,6 +1,9 @@
 package bgu.atd.a1;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * an abstract class that represents an action that may be executed using the
@@ -66,11 +69,24 @@ public abstract class Action<R> {
      * @param actions
      * @param callback the callback to execute once all the results are resolved
      */
-    protected final void then(Collection<? extends Action<?>> actions, callback callback) {
-       	//TODO: replace method body with real implementation
-        throw new UnsupportedOperationException("Not Implemented Yet.");
-   
+    protected final void then(@NotNull Collection<? extends Action<?>> actions, callback callback) {
+        AtomicInteger size = new AtomicInteger(actions.size());
+        for (Action<?> action : actions) {
+            action.promise.subscribe( () -> {
+                int oldVal;
+                int newVal;
+                do {
+                    oldVal = size.get();
+                    newVal = oldVal - 1;
+                } while (!size.compareAndSet(oldVal, newVal));
+                if (newVal == 0){
+                    this.callback = callback;
+                    sendMessage(this, this.actorId, this.actorState);
+                }
+            });
+        }
     }
+
 
     /**
      * resolve the internal result - should be called by the action derivative

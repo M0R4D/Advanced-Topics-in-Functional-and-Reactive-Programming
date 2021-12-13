@@ -1,6 +1,7 @@
 package bgu.atd.a1.sim.actions;
 
 import bgu.atd.a1.Action;
+import bgu.atd.a1.sim.privateStates.DepartmentPrivateState;
 
 import java.util.List;
 
@@ -24,7 +25,9 @@ public class CheckAdministrativeObligations extends Action {
      * start handling the action - note that this method is protected, a thread
      * cannot call it directly.
      */
-    protected void start() {
-
+    protected void start() throws IllegalAccessException {
+        if( !(this.actorState instanceof DepartmentPrivateState) )
+            throw new IllegalAccessException("only DepartmentPrivateState actor could enter here");
+        complete(true);
     }
 }

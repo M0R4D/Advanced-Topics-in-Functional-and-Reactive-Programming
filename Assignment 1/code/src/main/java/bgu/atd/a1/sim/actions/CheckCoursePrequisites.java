@@ -25,7 +25,6 @@ public class CheckCoursePrequisites extends Action {
         for ( String course : preCourses ) {
             if ( !((StudentPrivateState) this.actorState).getGrades().containsKey(course)) {
                 complete(false );
-                // TODO
                 return;
             }
             complete(true);

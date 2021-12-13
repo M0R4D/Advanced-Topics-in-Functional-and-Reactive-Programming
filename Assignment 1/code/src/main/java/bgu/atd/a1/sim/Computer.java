@@ -1,15 +1,23 @@
 package bgu.atd.a1.sim;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 import java.util.Map;
 
 public class Computer {
 
-	String computerType;
-	long failSig;
-	long successSig;
+	@SerializedName("Type")
+	public String computerType;
+
+	@SerializedName("Sig Fail")
+	public long failSig;
+
+	@SerializedName("Sig Success")
+	private long successSig;
 	
 	public Computer(String computerType) {
+		// { "Type":"A", "Sig Success": "1234666", "Sig Fail": "999283" }
 		this.computerType = computerType;
 	}
 	
